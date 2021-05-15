@@ -94,7 +94,7 @@ def open_with_app(txt, path):
     return 1
 
 def process_dir( dir ):
-    '''Make a directory for saving the file '''
+    '''Make directory(s) for saving the file '''
     root = os.path.dirname( os.path.abspath(__file__) )
     mdir = os.path.join(root, dir)
 
