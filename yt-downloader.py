@@ -10,6 +10,7 @@ __status__     =  'Development'
 
 #  Use: python version >= 3.7
 #  Install modules: python -m pip install pytube moviepy webbrowser
+#  If url via share does not work, check url in browser
 
 import os, sys, re
 import pytube, webbrowser
@@ -207,7 +208,7 @@ def main():
 
         try: # Get meta info movie parameters
             print(f'\nCheck meta info clip: {url}')
-            yt = pytube.YouTube( url )
+            yt = pytube.YouTube(url)
         except Exception as e:
             print(f'Error in stream:{e}')
             error = True
