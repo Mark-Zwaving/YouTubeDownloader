@@ -81,7 +81,7 @@ def get_video(yt, res):
 def open_with_app(txt, path):
     '''Ask for opening a downloaded media file'''
     t  = f'{txt} ?\n{path}\n'
-    t += "Type 'y' for yes\n"
+    t += "Type 'y' for yes.\nPress <enter> for no. \n"
     t += "Press 'q' to quit"
     answ = ask(t)
 
@@ -119,7 +119,7 @@ def ask_yt_url():
 
 def ask_audio_only():
     t  = 'Audio only ?\n'
-    t += "Type 'y' for yes.\nPess <enter> for no. \n"
+    t += "Type 'y' for yes.\nPress <enter> for no. \n"
     t += "Press 'q' to quit"
     answ = ask( t )
     if answ in answ_quit:
@@ -168,7 +168,7 @@ def ask_for_map():
 def ask_another():
     t  = 'Download an other file from YouTube ?\n'
     t += "Type 'y' for yes. \n"
-    t += "Press a key to quit"
+    t += "Press <enter> or another key to quit"
     answ = ask( t )
 
     return True if answ in answ_yes else answ_quit[0]
