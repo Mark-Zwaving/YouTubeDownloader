@@ -305,8 +305,8 @@ def main():
 
         # Another YouTube file ?
         if not ask_another():
-            print('\nGood bye...')
             break
 
 if __name__ == '__main__':
     main()
+    print('\nGood bye...')
