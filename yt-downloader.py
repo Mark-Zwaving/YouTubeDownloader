@@ -168,10 +168,10 @@ def ask_for_map():
 def ask_another():
     t  = 'Download an other file from YouTube ?\n'
     t += "Type 'y' for yes. \n"
-    t += "Press <enter> or another key to quit"
+    t += "Press <enter> or an other key to quit"
     answ = ask( t )
 
-    return True if answ in answ_yes else answ_quit[0]
+    return True if answ in answ_yes else False
 
 # App loop
 def main():
