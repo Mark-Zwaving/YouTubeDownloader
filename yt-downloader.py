@@ -12,9 +12,15 @@ __status__     =  'Development'
 #  Install modules: python -m pip install pytube moviepy webbrowser
 #  If url via share does not work, check url in browser
 
-import os, sys, re
-import pytube, webbrowser
-import moviepy.editor as mpe
+import os, sys, re, webbrowser
+
+# Check for modules
+err, mod = '', lambda m: f'Please install <{m}> module which is currently not installed.\nInstallation: python -m pip install {m}\n'
+try: import pytube; assert pytube
+except ImportError: err += mod('pytube')
+try: import moviepy.editor; assert moviepy.editor
+except ImportError: err += mod('moviepy')
+if err: sys.stderr.write(err); sys.exit(-1)
 
 # Available resolutions
 pixels    =  [ '2160p', '1440p', '1080p', '720p', '360p', '240p', '144p' ]
@@ -167,7 +173,7 @@ def ask_for_map():
         return mdir
 
 def ask_another():
-    t  = 'Download an other file from YouTube ?\n'
+    t  = 'Download another file from YouTube ?\n'
     t += "Type 'y' for yes. \n"
     t += "Press <enter> or an other key to quit"
     answ = ask( t )
@@ -262,8 +268,8 @@ def main():
                     video_real = oldname(video_path)
                     print('\nMake videoclip, merge video and audio.')
                     print(f'To: {video_real}')
-                    video_clip = mpe.VideoFileClip(video_path)
-                    audio_clip = mpe.AudioFileClip(audio_path)
+                    video_clip = moviepy.editor.VideoFileClip(video_path)
+                    audio_clip = moviepy.editor.AudioFileClip(audio_path)
                     final_clip = video_clip.set_audio(audio_clip)
                     final_clip.write_videofile(video_real)
                     # Remove old files
@@ -283,7 +289,7 @@ def main():
                     base, ext = os.path.splitext(audio_path)
                     audio_real = f'{base}.mp3'
                     print(f'\nConvert clip to mp3 {audio_real}')
-                    clip = mpe.AudioFileClip(audio_path)
+                    clip = moviepy.editor.AudioFileClip(audio_path)
                     clip.write_audiofile(audio_real)
                     remove(audio_path) # Remove old file
                 except Exception as e:
