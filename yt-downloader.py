@@ -10,17 +10,18 @@ __status__     =  'Development'
 
 #  Use: python version >= 3.7
 #  Install modules: python -m pip install pytube moviepy webbrowser
-#  If url via share does not work, check url in browser
+#  If url via share does not work, check youtube url in browser
 
 import os, sys, re, webbrowser
 
 # Check for modules
-err, mod = '', lambda m: f'Please install <{m}> module which is currently not installed.\nInstallation: python -m pip install {m}\n'
+err, cmd = '', 'Installation command: python -m pip install '
+mod = lambda m: f'Please install <{m}> module which is currently not installed.\n'
 try: import pytube; assert pytube
-except ImportError: err += mod('pytube')
+except ImportError: err += mod('pytube'); cmd += 'pytube '
 try: import moviepy.editor; assert moviepy.editor
-except ImportError: err += mod('moviepy')
-if err: sys.stderr.write(err); sys.exit(-1)
+except ImportError: err += mod('moviepy'); cmd += 'moviepy '
+if err: sys.stderr.write(err + cmd); sys.exit(-1)
 
 # Available resolutions
 pixels    =  [ '2160p', '1440p', '1080p', '720p', '360p', '240p', '144p' ]
