@@ -373,6 +373,9 @@ def main():
         if not ask_another():
             break
 
+     print('\nGood bye...')
+
+
 if __name__ == '__main__':
     main()
-    print('\nGood bye...')
+
