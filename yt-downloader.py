@@ -4,16 +4,15 @@ __author__     =  'Mark Zwaving'
 __email__      =  'markzwaving@gmail.com'
 __copyright__  =  'Copyright (C) Mark Zwaving. All rights reserved.'
 __license__    =  'GNU Lesser General Public License (LGPL)'
-__version__    =  '0.1.1'
+__version__    =  '0.1.0'
 __maintainer__ =  'Mark Zwaving'
 __status__     =  'Development'
 
 #  Use: python version >= 3.7
 #  Install modules: python -m pip install pytube moviepy webbrowser
 #  If url via share does not work, check youtube url in browser
-#  Install ffmpeg
 
-import os, sys, re, webbrowser, subprocess
+import os, sys, re, webbrowser
 
 # Check for modules
 err, cmd = '', 'Installation command: python -m pip install '
@@ -22,13 +21,13 @@ try: import pytube; assert pytube
 except ImportError: err += mod('pytube'); cmd += 'pytube '
 try: import moviepy.editor; assert moviepy.editor
 except ImportError: err += mod('moviepy'); cmd += 'moviepy '
-if err: sys.stderr.write(err + cmd + '\n'); sys.exit(-1)
+if err: sys.stderr.write(f'{err}{cmd}\n'); sys.exit(-1)
 
 # Available resolutions
 pixels    =  [ '2160p', '1440p', '1080p', '720p', '360p', '240p', '144p' ]
 answ_yes  =  [ 'y', 'yes', 'ok', 'oke', 'j', 'yee' ]
 answ_no   =  [ 'n', 'no', 'nee', 'nope', 'nada' ]
-answ_quit =  [ 'q', 'stop', 'done', 'quit' ]
+answ_quit =  [ 'q', 'stop', 'done' ]
 base_url  =  'https://www.youtube.com/watch?v='
 ask       =  lambda t : input(f'\n{t}\n ? ').strip()
 
@@ -95,69 +94,11 @@ def open_with_app(txt, path):
     answ = ask(t)
 
     if answ in answ_yes:
-        ok, err = False, ''
-
-        # Linux
-        if sys.platform.startswith('linux'):
-            try:
-                subprocess.call( ["xdg-open", path] )
-            except Exception as e:
-                err += e+'\n'
-                try:
-                    os.system(f'start {path}')
-                except Exception as e:
-                    err += e+'\n'
-                else:
-                    ok = True
-            else:
-                ok = True
-
-        # OS X
-        elif sys.platform == "darwin":
-            try:
-                os.system( f'open "{path}"' )
-            except Exception as e:
-                err += e+'\n'
-            else:
-                ok = True
-
-        # Windows...
-        elif sys.platform in ['cygwin', 'win32']:
-            try: # should work on Windows
-                os.startfile(path)
-            except Exception as e:
-                err += e+'\n'
-                try:
-                    os.system( f'start "{path}"' )
-                except Exception as e:
-                    err += e+'\n'
-                else:
-                    ok = True
-            else:
-                ok = True
-
-        # Possible fallback, use the webbrowser
-        if not ok:
-            try:
-                webbrowser.open_new_tab(path)
-            except Exception as e:
-                err += e+'\n'
-            else:
-                ok = True
-
-        t = f'Open {path} '
-        if not ok:
-            t += 'failed\n'
-            t += err
-            print(t)
-        else:
-            t += 'succesfull'
-            # pass
-
-        return 1
-
+        webbrowser.open_new_tab(path)
     elif answ in answ_quit:
         return answ_quit[0]
+
+    return 1
 
 def process_dir( dir ):
     '''Make directory(s) for saving the file '''
@@ -373,9 +314,6 @@ def main():
         if not ask_another():
             break
 
-     print('\nGood bye...')
-
-
 if __name__ == '__main__':
     main()
-
+    print('\nGood bye...')
