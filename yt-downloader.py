@@ -274,7 +274,7 @@ def main():
                     final_clip = video_clip.set_audio(audio_clip)
                     final_clip.write_videofile(video_real)
                     # Remove old files
-                    remove(audio_path)
+                    # remove(audio_path)
                     # remove(video_path)
 
                 except Exception as e:
