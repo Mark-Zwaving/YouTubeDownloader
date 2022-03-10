@@ -275,7 +275,7 @@ def main():
                     final_clip.write_videofile(video_real)
                     # Remove old files
                     # remove(audio_path)
-                    # remove(video_path)
+                    remove(video_path)
 
                 except Exception as e:
                     print(f'Error in merging video and audiostream\n{e}')
