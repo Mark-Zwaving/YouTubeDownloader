@@ -15,7 +15,7 @@ __status__     =  'Development'
 #  Update used modules e.g. pytube with:
 #  python3 -m pip install pytube --upgrade
 
-import os
+import os, warnings
 import sources.ask as ask 
 import sources.txt as txt
 import sources.fn as fn
@@ -55,41 +55,40 @@ if __name__ == '__main__':
             if txt.quit(video_res): 
                 break
 
-        # Process youtube url
-        ok, yt, title, description = fn.youtube(url) 
-
-        if ok: # No errors (yet)
-
-            # Download audio
-            ok, audio_path = fn.process_audio(yt, url, audio_map)
-            if ok:
-                if mp3: 
-                    # Change audio to mp3 
-                    ok, audio_path = fn.audio_to_mp3(audio_path)
-                    if not ok: 
-                        break 
-            else:
-                break
-            
-            # Download video too if not audio only
-            if not audio_only:
-                ok, video_path = fn.process_video(yt, url, video_map, video_res)
+        # Process youtube url, raise and catch errors
+        try:
+            ok, yt, title, description = fn.youtube(url) 
+            if ok: # No errors (yet)
+                # Download audio
+                ok, audio_path = fn.process_audio(yt, url, audio_map)
                 if ok:
-                    # Now merge video and audio
-                    ok, media_path = fn.merge_video_and_audio(video_path, audio_path)
-                    if not ok:
-                        break
+                    if mp3: # Change audio to mp3 
+                        ok, audio_path = fn.audio_to_mp3(audio_path)
+                        if not ok: 
+                            warnings.warn('Error in audio to mp3 convertion')
                 else:
-                    break
+                    warnings.warn('Error processing audio')
+            
+                # Download video too if not audio only
+                if not audio_only and ok:
+                    ok, video_path = fn.process_video(yt, url, video_map, video_res)
+                    if ok:
+                        # Now merge video and audio
+                        ok, media_path = fn.merge_video_and_audio(video_path, audio_path)
+                        if not ok:
+                           warnings.warn('Error in merge video and audio')
+                    else:
+                        warnings.warn('Error in in processing video')
+                else:
+                    media_path = audio_path
             else:
-                media_path = audio_path
+                warnings.warn('Error in processing youtube url')
 
-        else:
-            break
-
-        if not ok: # Something went wrong
+        except Exception as e:
             txt.show_errors(yt, url)
-        else:
+            warnings.warn(f'Error(s)\n{repr(e)}')
+
+        if ok: # No errors somehow ;)
             if ask.open_with_app(media_path, default="y"):
                 ok = fn.exec_with_app(media_path)
 
