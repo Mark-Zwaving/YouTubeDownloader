@@ -1,5 +1,10 @@
-/bck
-/music
-/musis
-/video
-/speeches
+sources/__pycache__/*.*
+
+venv/
+.vscode/
+
+*.pyc
+*.mp3
+*.ogg
+*.mp4
+*.webm
