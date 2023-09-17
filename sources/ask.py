@@ -56,7 +56,7 @@ def progressive(default=cfg.ask_default_progressive):
         t  = 'Do you want to download a separate video and an audio file ? \n'
         t += 'The separation of a video and audio file, gives a much higher quality (mostly in sound).\n'
         t += 'But it will take a lot longer to process the video.\n'
-        t += 'A video with the audio and video in one file is only available for video\'s with a 720px resolution or lower.\n'
+        t += 'A video with the audio and video in one file is only available\nfor video\'s with a 720px resolution or lower.\n'
         t += 'For a higher resolution (>720px), you always must chose the separate files option.' 
         answ = question(t, quit=True, yes=True, no=True, default=default)
 
