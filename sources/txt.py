@@ -14,6 +14,8 @@ lst_yes  =  [ 'y', 'yes', 'ok', 'oke', 'j', 'yee' ]
 lst_no   =  [ 'n', 'no', 'nee', 'nope', 'nada' ]
 lst_quit =  [ 'q', 'stop', 'done' ]
 
+quit = lst_quit[0]
+
 # Available resolutions
 lst_pixels    =  ['2160', '1440', '1080', '720', '360', '240', '144']
 
@@ -30,7 +32,7 @@ def clean_spaces(s):
     s = re.sub('\s\s+', ' ', s)
     return s
 
-def quit( s ):
+def is_quit( s ):
     return str(s).lower() in lst_quit
 
 def show_errors(yt, url):
