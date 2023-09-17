@@ -13,6 +13,16 @@ import os, sys, moviepy, subprocess, webbrowser
 from pytube import YouTube
 import sources.txt as txt
 
+def check_input_vars(separate, resolution):
+    if separate == False and int(resolution[:-1]) > 720:
+        print('\n!Correction.') 
+        print(f'Resolution {resolution}px is too high for a video with one audio and video file')
+        print('Video downloads changed to two files: an audio and a video file')
+        separate = True 
+
+    return separate, resolution
+
+
 def check_for_modules():
     err, cmd = '', 'Installation command: python -m pip install '
     mod = lambda m: f'Please install <{m}> module which is currently not installed.\n'
@@ -50,57 +60,49 @@ def rename(f1, f2):
             remove(f2)
         os.rename(f1, f2)
 
-def get_youtube( yt, 
-                 progressive="False", 
-                 typ='video', mime_type='video/mp4', 
+def get_youtube( yt, progressive="False", typ='video', mime_type="video/mp4",
                  audio_only=False, resolution=cfg.ask_default_resolution
                  ):
     '''Get a stream from Youtube'''
 
-    if audio_only: # Get an audio stream
-        stream = yt.streams.filter( progressive=progressive, mime_type=mime_type, 
-                                    type=typ, only_audio=audio_only ).desc().first()        
+    # Get an audio stream
+    if audio_only: 
+        stream = yt.streams.filter( progressive=progressive, type=typ, mime_type=mime_type,
+                                    only_audio=audio_only ).desc().first()        
         if not stream: 
             # Get any audio stream
             stream = yt.streams.filter(only_audio=audio_only).desc().first() 
-        
+    
+    # Get a video stream
     else:
-        stream = yt.streams.filter( progressive=progressive, type=typ, mime_type=mime_type, 
+        stream = yt.streams.filter( progressive=progressive, type=typ, mime_type=mime_type,
                                     res=resolution ).desc().first()
         if not stream: 
             # Get other resolution streams
             for px in txt.lst_pixels:
-                stream = yt.streams.filter(type="video", res=px+'p').desc().first()
+                stream = yt.streams.filter(type=typ, res=px+'p').desc().first()
                 if stream: 
                     break
             else:
                 # Get a video whatever
-                stream = yt.streams.first(type="video")
+                stream = yt.streams.first(type=typ)
 
     if stream: 
         return stream
 
     return False # No stream found
 
-
 def get_audio_only_stream(yt):
     ''' Get an audio stream '''
-    return get_youtube( yt, progressive='False', 
-                        typ='audio', mime_type='audio/mp4', 
-                        audio_only=True )
+    return get_youtube( yt, progressive='False', typ='audio', audio_only=True )
 
 def get_video_only_stream(yt, resolution=cfg.ask_default_resolution):
     ''' Get a video only stream of a certain resolution.'''
-    return get_youtube( yt, progressive='False', 
-                        typ='video', mime_type='video/mp4', 
-                        audio_only=False, resolution=resolution )
-
+    return get_youtube( yt, progressive='False', typ='video', mime_type='video/mp4', resolution=resolution )
 
 def get_audio_and_video_stream(yt, resolution=cfg.ask_default_resolution):
     ''' Get a video and audio stream in one video of a certain resolution.'''
-    return get_youtube( yt, progressive='True', 
-                        typ='video', mime_type='video/mp4', 
-                        audio_only=False, resolution=resolution )
+    return get_youtube( yt, progressive='True', typ='video', mime_type='video/mp4', resolution=resolution )
 
 def process_dir( dir ):
     '''Make directory(s) for saving the file '''
@@ -152,15 +154,16 @@ def youtube(url):
             
     return ok, yt, title, description
 
-def process_video_only(yt, url, download_map, video_res):
+def process_video_only(yt, url, download_map, resolution):
     ok, path = True, ''
 
     try: # Process video
         print('Download video only')
+        print(f'Resolution is: {resolution}')
         print(f'From: "{url}"')
         print(f'To: "{download_map}"\n')
 
-        stream = get_video_only_stream(yt, video_res)
+        stream = get_video_only_stream(yt, resolution)
         if stream:
             path = stream.download(download_map)
         else:
@@ -172,34 +175,34 @@ def process_video_only(yt, url, download_map, video_res):
 
     else:
         print('Download video successful.')
-        print(f'To: {path}\n')
+        print(f'To: "{path}"\n')
 
     return ok, path
 
-def process_video_and_audio(yt, url, download_map, video_res):
+def process_video_and_audio(yt, url, download_map, resolution):
     ok, path = True, ''
 
     try: # Process video
         print(f'Download video and audio in one file')
+        print(f'Resolution is: {resolution}')
         print(f'From: "{url}"')
-        print(f'To: {download_map}\n')
+        print(f'To: "{download_map}"\n')
 
-        stream = get_audio_and_video_stream(yt, video_res)
+        stream = get_audio_and_video_stream(yt, resolution)
         if stream:
             path = stream.download(download_map)
         else:
             raise Exception('Video stream seems to be empthy')
         
     except Exception as e:
-        print(f'Download error in video stream: {stream}\n{e}\n')
+        print(f'Download error in video stream:\n{stream}\n{e}\n')
         ok = False
 
     else:
         print('Download video successful.')
-        print(f'To: {path}\n')
+        print(f'To: "{path}"\n')
 
     return ok, path
-
 
 def process_audio_only(yt, url, download_map):
     ok, path, stm = True, '', ''
@@ -221,7 +224,7 @@ def process_audio_only(yt, url, download_map):
 
     else:
         print(f'Download audio successful.')
-        print(f'To: {path}\n')
+        print(f'To: "{path}"\n')
 
     return ok, path
 
