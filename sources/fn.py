@@ -4,10 +4,11 @@ __author__     =  'Mark Zwaving'
 __email__      =  'markzwaving@gmail.com'
 __copyright__  =  'Copyright (C) Mark Zwaving. All rights reserved.'
 __license__    =  'GNU Lesser General Public License (LGPL)'
-__version__    =  '0.0.1'
+__version__    =  '0.0.5'
 __maintainer__ =  'Mark Zwaving'
 __status__     =  'Development'
 
+import config as cfg
 import os, sys, moviepy, subprocess, webbrowser
 from pytube import YouTube
 import sources.txt as txt
@@ -49,61 +50,57 @@ def rename(f1, f2):
             remove(f2)
         os.rename(f1, f2)
 
-def get_stream_audio_only(yt):
+def get_youtube( yt, 
+                 progressive="False", 
+                 typ='video', mime_type='video/mp4', 
+                 audio_only=False, resolution=cfg.ask_default_resolution
+                 ):
+    '''Get a stream from Youtube'''
+
+    if audio_only: # Get an audio stream
+        stream = yt.streams.filter( progressive=progressive, mime_type=mime_type, 
+                                    type=typ, only_audio=audio_only ).desc().first()        
+        if not stream: 
+            # Get any audio stream
+            stream = yt.streams.filter(only_audio=audio_only).desc().first() 
+        
+    else:
+        stream = yt.streams.filter( progressive=progressive, type=typ, mime_type=mime_type, 
+                                    res=resolution ).desc().first()
+        if not stream: 
+            # Get other resolution streams
+            for px in txt.lst_pixels:
+                stream = yt.streams.filter(type="video", res=px+'p').desc().first()
+                if stream: 
+                    break
+            else:
+                # Get a video whatever
+                stream = yt.streams.first(type="video")
+
+    if stream: 
+        return stream
+
+    return False # No stream found
+
+
+def get_audio_only_stream(yt):
     ''' Get an audio stream '''
-    stm = yt.streams.filter( progressive="False", mime_type='audio/mp4', 
-                             type='audio', only_audio=True ).desc().first()
-    if stm: 
-        return stm
+    return get_youtube( yt, progressive='False', 
+                        typ='audio', mime_type='audio/mp4', 
+                        audio_only=True )
 
-    stm = yt.streams.filter(only_audio=True).desc().first() # Whatever
-    return stm
+def get_video_only_stream(yt, resolution=cfg.ask_default_resolution):
+    ''' Get a video only stream of a certain resolution.'''
+    return get_youtube( yt, progressive='False', 
+                        typ='video', mime_type='video/mp4', 
+                        audio_only=False, resolution=resolution )
 
 
-def get_stream_video_only(yt, resolution):
-    ''' Get a video stream of a certain resolution.'''
-    # Get correct resolution
-    stm = yt.streams.filter( progressive="False", mime_type="video/mp4", 
-                             type="video", res=resolution ).desc().first()
-    if stm: 
-        return stm
-
-    # Still nothing ? Get other resolution streams
-    for pix in txt.lst_pixels:
-        stm = yt.streams.filter(type="video", res=pix+'p').desc().first()
-        if stm: 
-            return stm
-
-    # Get whatever
-    stm = yt.streams.first(type="video")
-    if stm: 
-        return stm
-
-    # Error
-    print('Error', str(yt.streams))
- 
-    return False # ok give up
-
-def get_clip_audio_and_video(yt, resolution):
-    stm = yt.streams.filter( progressive="True", mime_type="video/mp4", 
-                             res=resolution ).desc().first()
-    if stm: 
-        return stm
-    
-    # Still nothing ? Get other resolution streams
-    for pix in txt.lst_pixels:
-        stm = yt.streams.filter(ime_type="video/mp4", res=pix+'p').desc().first()
-        if stm: 
-            return stm
-
-    # Get whatever
-    stm = yt.streams.first()
-    if stm: 
-        return stm
-
-    # Error
-    print('Error', str(yt.streams))
-
+def get_audio_and_video_stream(yt, resolution=cfg.ask_default_resolution):
+    ''' Get a video and audio stream in one video of a certain resolution.'''
+    return get_youtube( yt, progressive='True', 
+                        typ='video', mime_type='video/mp4', 
+                        audio_only=False, resolution=resolution )
 
 def process_dir( dir ):
     '''Make directory(s) for saving the file '''
@@ -120,7 +117,6 @@ def process_dir( dir ):
 
     return mdir
 
-
 def youtube(url):
     ok, yt, title, description = True, None, '', ''
     try: # Get meta info movie parameters
@@ -136,34 +132,59 @@ def youtube(url):
         ok = False
     else:
         # Print media info (if there)
-        print('Check clip success.')
+        print('\nYouTube video found.')
         print(f'Url: "{url}"')
+
         if yt.title:
             title = txt.clean_spaces(yt.title)[:100] # Shortened a bit
             print(f'Title: {title}')
         else:
-            print(f'No clip title found!')
+            print(f'No title found!')
 
         if yt.description:
             description = txt.clean_spaces(yt.description)[:500] # Shortened
             print('Description')
             print(description)
         else:
-            print(f'No clip description found!')
+            print(f'No description found!')
 
         print(' ')
             
     return ok, yt, title, description
 
-
-def process_video(yt, url, download_map, video_res):
+def process_video_only(yt, url, download_map, video_res):
     ok, path = True, ''
 
     try: # Process video
-        print(f'Download video from: {url}.')
-        print(f'To directory: {download_map}\n')
+        print('Download video only')
+        print(f'From: "{url}"')
+        print(f'To: "{download_map}"\n')
 
-        stream = get_stream_video_only(yt, video_res)
+        stream = get_video_only_stream(yt, video_res)
+        if stream:
+            path = stream.download(download_map)
+        else:
+            raise Exception('Video stream seems to be empthy')
+        
+    except Exception as e:
+        print(f'Download error in video stream: {stream}\n{e}\n')
+        ok = False
+
+    else:
+        print('Download video successful.')
+        print(f'To: {path}\n')
+
+    return ok, path
+
+def process_video_and_audio(yt, url, download_map, video_res):
+    ok, path = True, ''
+
+    try: # Process video
+        print(f'Download video and audio in one file')
+        print(f'From: "{url}"')
+        print(f'To: {download_map}\n')
+
+        stream = get_audio_and_video_stream(yt, video_res)
         if stream:
             path = stream.download(download_map)
         else:
@@ -180,14 +201,15 @@ def process_video(yt, url, download_map, video_res):
     return ok, path
 
 
-def process_audio(yt, url, download_map):
+def process_audio_only(yt, url, download_map):
     ok, path, stm = True, '', ''
 
     try: # Process audio
-        print(f'Download audio from: {url}')
-        print(f'To directory: {download_map}\n')
+        print(f'Download audio only')
+        print(f'From: "{url}"')
+        print(f'To: "{download_map}"\n')
 
-        stm = get_stream_audio_only( yt )
+        stm = get_audio_only_stream( yt )
         if stm:
             path = stm.download(output_path=download_map)
         else:
@@ -196,6 +218,7 @@ def process_audio(yt, url, download_map):
     except Exception as e:
         print(f'Error in audiostream: {stm}\n{e}\n')
         ok = False
+
     else:
         print(f'Download audio successful.')
         print(f'To: {path}\n')
@@ -230,10 +253,10 @@ def audio_to_mp3(audio_path):
 def merge_video_and_audio(video_path, audio_path):
     ok, path = True, ''
 
-    print('Make videoclip: merge video and audio.')
-    print(f'From audio: {audio_path}')
-    print(f'From video: {video_path}')
-    print(f'To audio and video: {video_path}\n')
+    print('Merge video and audio to one file.')
+    print(f'Audio: "{audio_path}"')
+    print(f'Video: "{video_path}"')
+    print(f'To video: "{video_path}"\n')
 
     try: # Make video clip
         # Rename old file names for correct merging (anyway)
@@ -253,7 +276,7 @@ def merge_video_and_audio(video_path, audio_path):
         final_clip.write_videofile(video_path)
 
     except Exception as e:
-        print(f'Error in merging video and audiostream\n{e}')
+        print(f'Error in merging video and audiostream\n{e}\n')
         ok = False
 
     else:
@@ -263,7 +286,6 @@ def merge_video_and_audio(video_path, audio_path):
         path = video_path # Done
 
     return ok, path
-
 
 def exec_with_app(path):
     '''Function opens a file with an default application'''
@@ -309,8 +331,8 @@ def exec_with_app(path):
             ok = False
 
     if ok: 
-        print('Open file with an app successful')
+        print('Open file with an app successful\n')
     else: 
-        print(f'Error open file with an app.\n{err}')
+        print(f'Error open file with an app.\n{err}\n')
 
     return ok
