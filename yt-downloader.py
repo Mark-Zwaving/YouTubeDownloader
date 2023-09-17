@@ -60,6 +60,8 @@ if __name__ == '__main__':
             if txt.is_quit(resolution): 
                 break
 
+            separate, resolution = fn.check_input_vars(separate, resolution)
+
         # Process youtube url, raise and catch errors
         try:
             ok, yt, title, description = fn.youtube(url) 
@@ -90,7 +92,7 @@ if __name__ == '__main__':
                             media_path = video_path 
                         else:
                             print('Processing video and audio in one file from YouTube failed.')
-                            print('Trying to download separate video and audio files...\n')
+                            print('Now trying to download separate video and audio files...\n')
                             separate = True
                             try_video_audio = True
 
