@@ -4,7 +4,7 @@ __author__     =  'Mark Zwaving'
 __email__      =  'markzwaving@gmail.com'
 __copyright__  =  'Copyright (C) Mark Zwaving. All rights reserved.'
 __license__    =  'GNU Lesser General Public License (LGPL)'
-__version__    =  '0.1.4'
+__version__    =  '0.1.5'
 __maintainer__ =  'Mark Zwaving'
 __status__     =  'Development'
 
@@ -15,7 +15,8 @@ __status__     =  'Development'
 #  Update used modules e.g. pytube with:
 #  python3 -m pip install pytube --upgrade
 
-import os, warnings
+import os
+import config as cfg
 import sources.ask as ask 
 import sources.txt as txt
 import sources.fn as fn
@@ -30,70 +31,118 @@ video_map = os.path.join(app_map, 'video')
 if __name__ == '__main__': 
     while True: # App loop
         # Init/Reset default values
-        ok, audio_only, mp3, video = False, False, False, True
-        video_res, adaptive, video_path, audio_path = False, True, False, False 
-        stream_audio, stream_video = None, None
-        media_path, download_map = '', ''
+        ok, audio_only, mp3, separate, video_path, audio_path = False, False, False, False, False, False 
+        resolution, media_path = cfg.ask_default_resolution, ''
 
         # Ask for youtube url ?
         url = ask.yt_url()
-        if txt.quit(url): 
+        if txt.is_quit(url): 
             break
 
         # Ask for audio only ?
-        audio_only = ask.audio_only(default='n')
-        if txt.quit(audio_only): 
+        audio_only = ask.audio_only()
+        if txt.is_quit(audio_only): 
             break
         
         if audio_only: # Only audio
-            # Set video to false and ask for to convert to mp3
-            video, mp3 = False, ask.audio_to_mp3(default='n') 
-            if txt.quit(mp3): 
+            # Ask for to convert to mp3
+            mp3 = ask.audio_to_mp3() 
+            if txt.is_quit(mp3): 
                 break
+        
         else: # A video is asked for (too), not audio only
-            video_res = ask.video_resolution(default='1080') # Ask for a video resolution
-            if txt.quit(video_res): 
+            # Progressive video
+            separate = ask.progressive()
+            if txt.is_quit(separate): 
+                break
+
+            resolution = ask.video_resolution() # Ask for a video resolution
+            if txt.is_quit(resolution): 
                 break
 
         # Process youtube url, raise and catch errors
         try:
             ok, yt, title, description = fn.youtube(url) 
             if ok: # No errors (yet)
-                # Download audio
-                ok, audio_path = fn.process_audio(yt, url, audio_map)
-                if ok:
-                    if mp3: # Change audio to mp3 
-                        ok, audio_path = fn.audio_to_mp3(audio_path)
-                        if not ok: 
-                            warnings.warn('Error in audio to mp3 convertion')
-                else:
-                    warnings.warn('Error processing audio')
-            
-                # Download video too if not audio only
-                if not audio_only and ok:
-                    ok, video_path = fn.process_video(yt, url, video_map, video_res)
+                
+                if audio_only: # Download audio only
+                    # Download audio
+                    ok, audio_path = fn.process_audio_only(yt, url, audio_map)
                     if ok:
-                        # Now merge video and audio
-                        ok, media_path = fn.merge_video_and_audio(video_path, audio_path)
-                        if not ok:
-                           warnings.warn('Error in merge video and audio')
+                        if mp3: # Change audio to mp3 
+                            ok, mp3_path = fn.audio_to_mp3(audio_path)
+                            if ok:
+                                audio_path = mp3_path
+                            else: 
+                                print('Error in audio to mp3 convertion')
                     else:
-                        warnings.warn('Error in in processing video')
-                else:
-                    media_path = audio_path
-            else:
-                warnings.warn('Error in processing youtube url')
+                        print('Error processing audio from YouTube')
 
+                    if ok:
+                        media_path = audio_path 
+
+                else:
+                    try_video_audio = False
+                    if not separate:
+                        # Download video and audio in one file
+                        ok, video_path = fn.process_video_and_audio(yt, url, video_map, resolution)
+                        if ok:
+                            media_path = video_path 
+                        else:
+                            print('Processing video and audio in one file from YouTube failed.')
+                            print('Trying to download separate video and audio files...\n')
+                            separate = True
+                            try_video_audio = True
+
+                    if separate: 
+                        # Download audio file
+                        ok_audio, audio_path = fn.process_audio_only(yt, url, audio_map) # Download audio
+                        if not ok_audio:
+                            print('Error processing audio')
+
+                        # Download video file
+                        ok_video, video_path = fn.process_video_only(yt, url, video_map, resolution) # Download video
+                        if not ok_video:
+                            print('Error processing video')
+
+                        ok = ok_video and ok_audio
+
+                        if ok: 
+                            ok, video_path = fn.merge_video_and_audio(video_path, audio_path)
+                            if ok:
+                                media_path = video_path
+                            else: 
+                                print('Error in merge video and audio')
+                        else: 
+                            print('Error processing a separate video or audio')
+                            if not try_video_audio:
+                                # Download video and audio in one file
+                                print('Try to download video and audio in one file.')
+                                ok, video_path = fn.process_video_and_audio(yt, url, video_map, resolution)
+                                if ok:
+                                    media_path = video_path
+                                else:
+                                    print('Processing video and audio in one file from YouTube failed.')
+            else:
+                print('Fatal error in processing youtube url')
+
+   
         except Exception as e:
             txt.show_errors(yt, url)
-            warnings.warn(f'Error(s)\n{repr(e)}')
+            print(f'Error(s)\n{repr(e)}')
 
         if ok: # No errors somehow ;)
-            if ask.open_with_app(media_path, default="y"):
+            answ = ask.open_with_app(media_path)
+            if txt.is_quit(answ):
+                break
+            elif answ == True:
                 ok = fn.exec_with_app(media_path)
 
+        else:
+            print('\nFailed to download a media file from YouTube.\n')
+
         # Another YouTube file ?
-        if ask.download_again(default='n'):
+        if ask.download_again() == True:
             continue
         else:
             break # End
